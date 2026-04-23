@@ -1,0 +1,7 @@
+{
+  "name": "BanFitKu",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular"
+}
