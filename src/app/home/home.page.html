@@ -1,20 +1,413 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
-  </ion-toolbar>
-</ion-header>
+<ion-content [fullscreen]="true" class="dashboard-content">
+  
+  <!-- Hidden File Input -->
+  <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" style="display: none">
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <!-- === DASHBOARD TAB === -->
+  <div *ngIf="currentTab === 'home'" class="tab-content">
+    <div class="header-wrapper ion-padding">
+      <div class="user-row">
+        <div class="welcome-text">
+          <h1>Hi, {{ userSession?.fullname || 'User' }}!</h1>
+          <p>Kesehatan Motor: <span class="bike-model">Sangat Baik</span></p>
+        </div>
+        <div class="profile-pic" (click)="fileInput.click()">
+          <img [src]="userSession?.profilePic || 'assets/profile_avatar.png'" alt="Profile">
+        </div>
+      </div>
+    </div>
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+    <!-- Tire Recommendation Section -->
+    <div class="recommendation-header ion-padding-horizontal">
+      <div class="section-title-row">
+        <h2 class="section-title">REKOMENDASI BAN</h2>
+        <span class="motor-badge">{{ userSession?.motorType || 'Semua Motor' }}</span>
+      </div>
+      <p class="section-subtitle">Ban terbaik pilihan untuk performa maksimal</p>
+    </div>
+
+    <!-- Category Selector -->
+    <div class="category-pills ion-padding-horizontal">
+      <div *ngFor="let cat of categories" 
+           class="pill" 
+           [class.active]="activeCategory === cat"
+           (click)="setCategory(cat)">
+        <ion-icon [name]="cat === 'Harian' ? 'cafe-outline' : (cat === 'Balap' ? 'speedometer-outline' : 'map-outline')"></ion-icon>
+        <span>{{ cat }}</span>
+      </div>
+    </div>
+
+    <!-- Tire Recommendation List -->
+    <div class="tire-list ion-padding">
+      <div *ngIf="recommendedTires.length === 0" class="empty-state">
+        <ion-icon name="search-outline"></ion-icon>
+        <p>Tidak ada ban yang cocok untuk ring {{ userSession?.rimSize || '14' }}</p>
+      </div>
+
+      <ion-card *ngFor="let tire of recommendedTires" class="premium-tire-card animate-fade-in" (click)="openDetails(tire)">
+        <div class="card-glow"></div>
+        <div class="tire-content">
+          <div class="tire-image-box">
+            <img [src]="tire.image" [alt]="tire.name">
+            <div class="match-indicator" *ngIf="tire.matchScore > 95">
+              <ion-icon name="flash"></ion-icon>
+              <span>{{ tire.matchScore }}% MATCH</span>
+            </div>
+          </div>
+          
+          <div class="tire-info">
+            <div class="brand-rating">
+              <span class="brand-tag">{{ tire.brand }}</span>
+              <div class="rating-box">
+                <ion-icon name="star"></ion-icon>
+                <span>{{ tire.rating }}</span>
+              </div>
+            </div>
+            <h3 class="tire-display-name">{{ tire.name }}</h3>
+            
+            <!-- Specifications Grid -->
+            <div class="specs-grid">
+              <div class="spec-item">
+                <ion-icon name="resize-outline"></ion-icon>
+                <span>{{ tire.size }}</span>
+              </div>
+              <div class="spec-item">
+                <ion-icon name="flask-outline"></ion-icon>
+                <span>{{ tire.compound || 'Medium' }}</span>
+              </div>
+              <div class="spec-item">
+                <ion-icon name="infinite-outline"></ion-icon>
+                <span>{{ tire.durability }}</span>
+              </div>
+            </div>
+
+            <div class="price-action">
+              <span class="price-tag">{{ tire.price }}</span>
+              <ion-button fill="clear" class="arrow-btn">
+                <ion-icon name="chevron-forward-circle"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
+        </div>
+      </ion-card>
+    </div>
   </div>
+
+  <!-- === RECOMMENDATIONS TAB === -->
+  <div *ngIf="currentTab === 'recommendations'" class="tab-content ion-padding">
+    <div class="page-header">
+      <h1 class="bold-title">Cari Ban</h1>
+      <p class="subtitle">Pilih kategori untuk melihat rekomendasi</p>
+    </div>
+
+    <!-- Search Bar -->
+    <ion-searchbar 
+      placeholder="Cari merek atau tipe ban..." 
+      class="custom-searchbar"
+      (ionInput)="onSearch($event)"
+      [(ngModel)]="searchText">
+    </ion-searchbar>
+
+    <!-- Comparison Tray -->
+    <div class="comparison-tray animate-slide-up" *ngIf="comparisonList.length > 0">
+      <div class="tray-info">
+        <p>{{ comparisonList.length }} ban dipilih</p>
+      </div>
+      <ion-button size="small" [disabled]="comparisonList.length < 2" color="light">BANDINGKAN</ion-button>
+    </div>
+
+    <!-- Filters & Sorting -->
+    <div class="filter-row">
+      <div class="filter-item">
+        <ion-label>Merek</ion-label>
+        <ion-select [(ngModel)]="selectedBrand" (ionChange)="updateFilters()" interface="popover" toggleIcon="chevron-down-outline">
+          <ion-select-option *ngFor="let brand of brands" [value]="brand">{{ brand }}</ion-select-option>
+        </ion-select>
+      </div>
+      <div class="filter-item">
+        <ion-label>Sortir</ion-label>
+        <ion-select [(ngModel)]="selectedSort" (ionChange)="updateFilters()" interface="popover" toggleIcon="swap-vertical-outline">
+          <ion-select-option value="Rekomendasi">Rekomendasi</ion-select-option>
+          <ion-select-option value="Harga Terendah">Harga Terendah</ion-select-option>
+          <ion-select-option value="Harga Tertinggi">Harga Tertinggi</ion-select-option>
+          <ion-select-option value="Rating Tertinggi">Rating Tertinggi</ion-select-option>
+        </ion-select>
+      </div>
+    </div>
+
+    <!-- Category Chips -->
+    <div class="category-scroll">
+      <div *ngFor="let cat of categories" 
+           class="category-chip" 
+           [class.active]="activeCategory === cat"
+           (click)="setCategory(cat)">
+        {{ cat }}
+      </div>
+    </div>
+
+    <div class="tire-grid">
+      <ion-card *ngFor="let tire of recommendedTires" class="tire-card animate-fade-in" (click)="openDetails(tire)">
+        <div class="match-badge" *ngIf="tire.matchScore > 95">BEST MATCH</div>
+        <div class="compare-btn-overlay" (click)="toggleComparison(tire)" [class.active]="isInComparison(tire)">
+          <ion-icon [name]="isInComparison(tire) ? 'layers' : 'layers-outline'"></ion-icon>
+        </div>
+        <div class="tire-img-wrapper" (click)="openDetails(tire)">
+          <img [src]="tire.image" [alt]="tire.name">
+        </div>
+        <ion-card-content>
+          <div class="brand-row">
+            <span class="tire-brand">{{ tire.brand }}</span>
+            <span class="tire-rating"><ion-icon name="star"></ion-icon> {{ tire.rating }}</span>
+          </div>
+          <h2 class="tire-name">{{ tire.name }}</h2>
+          <div class="price-row">
+            <span class="tire-price">{{ tire.price }}</span>
+            <ion-button fill="clear" size="small" class="detail-btn" (click)="openDetails(tire)">DETAIL</ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <!-- === PANDUAN TAB === -->
+  <div *ngIf="currentTab === 'panduan'" class="tab-content ion-padding">
+    <h1 class="bold-title">Panduan</h1>
+    <p class="subtitle">Tips merawat dan memilih ban</p>
+    
+    <div class="guide-list">
+      <ion-card class="custom-card">
+        <ion-card-header>
+          <ion-card-title>Cara Baca Ukuran Ban</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Misal: 100/80-14. 100 adalah lebar ban (mm), 80 adalah persentase tinggi ban dari lebar, 14 adalah ukuran ring velg.
+        </ion-card-content>
+      </ion-card>
+      <ion-card class="custom-card">
+        <ion-card-header>
+          <ion-card-title>Kapan Harus Ganti Ban?</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          Cek tanda TWI (segitiga di samping ban). Jika kembangan sudah sejajar dengan tanda TWI, ban harus segera diganti.
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
+
+  <!-- === RAWAT TAB === -->
+  <div *ngIf="currentTab === 'rawat'" class="tab-content ion-padding">
+    <div class="page-header">
+      <h1 class="bold-title">Jadwal Perawatan</h1>
+      <p class="subtitle">Jadwal untuk {{ userSession?.motorType || 'Motor' }}</p>
+    </div>
+
+    <div class="health-dashboard animate-fade-in">
+      <div class="health-card glass-card">
+        <div class="card-header">
+          <ion-icon name="shield-checkmark-outline"></ion-icon>
+          <span>KESEHATAN BAN</span>
+        </div>
+        <div class="health-content">
+          <div class="health-value" [ngClass]="{'low': tireHealth < 30, 'mid': tireHealth >= 30 && tireHealth < 70, 'high': tireHealth >= 70}">
+            {{ tireHealth }}%
+          </div>
+          <div class="health-bar-container">
+            <div class="health-bar-fill" [style.width.%]="tireHealth" [ngClass]="{'low': tireHealth < 30, 'mid': tireHealth >= 30 && tireHealth < 70, 'high': tireHealth >= 70}"></div>
+          </div>
+          <p class="health-note">Berdasarkan penggunaan {{ maintenanceLogs.length > 0 ? maintenanceLogs[0].odometer : 0 }} KM</p>
+        </div>
+      </div>
+
+      <div class="status-grid">
+        <div class="status-card glass-card" [class.urgent]="pressureStatus.urgent">
+          <div class="status-icon">
+            <ion-icon name="speedometer-outline"></ion-icon>
+          </div>
+          <div class="status-info">
+            <span class="label">Tekanan</span>
+            <span class="value">{{ pressureStatus.urgent ? 'PERLU CEK' : 'NORMAL' }}</span>
+          </div>
+          <div class="status-footer">{{ pressureStatus.days }} Hari Lalu</div>
+        </div>
+        <div class="status-card glass-card">
+          <div class="status-icon">
+            <ion-icon name="calendar-outline"></ion-icon>
+          </div>
+          <div class="status-info">
+            <span class="label">Servis</span>
+            <span class="value">OK</span>
+          </div>
+          <div class="status-footer">Jadwal Teratur</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-row">
+      <ion-button (click)="quickCheck('Cek Tekanan')" class="action-btn glass-btn">
+        <ion-icon name="water-outline" slot="start"></ion-icon>
+        CEK ANGIN
+      </ion-button>
+      <ion-button (click)="quickCheck('Servis Rutin')" class="action-btn glass-btn">
+        <ion-icon name="construct-outline" slot="start"></ion-icon>
+        SERVIS
+      </ion-button>
+    </div>
+
+    <div class="maintenance-list">
+      <h2 class="section-title ion-padding-horizontal">TUGAS RUTIN</h2>
+      <ion-card *ngFor="let task of maintenanceTasks" class="maintenance-card glass-card">
+        <ion-card-content>
+          <div class="task-row">
+            <div class="icon-box" [ngClass]="task.color">
+              <ion-icon [name]="task.icon"></ion-icon>
+            </div>
+            <div class="task-info">
+              <h3>{{ t(task.title) }}</h3>
+              <p>{{ t(task.note) }}</p>
+            </div>
+            <div class="checkbox-wrapper" (click)="task.completed = !task.completed; toggleTask(task)">
+              <div class="custom-checkbox" [class.checked]="task.completed">
+                <ion-icon name="checkmark" *ngIf="task.completed"></ion-icon>
+              </div>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <!-- Logbook Section -->
+    <div class="logbook-section">
+      <div class="section-header">
+        <h2 class="section-title">RIWAYAT SERVIS</h2>
+        <ion-button size="small" fill="clear" (click)="openAddLogModal()">
+          <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+          TAMBAH
+        </ion-button>
+      </div>
+
+      <div class="logs-container">
+        <div *ngIf="maintenanceLogs.length === 0" class="empty-logs">
+          <ion-icon name="clipboard-outline"></ion-icon>
+          <p>Belum ada riwayat servis</p>
+        </div>
+
+        <div *ngFor="let log of maintenanceLogs" class="log-card">
+          <div class="log-main">
+            <div class="log-type">{{ log.type }}</div>
+            <div class="log-odo">{{ log.odometer }} KM</div>
+          </div>
+          <div class="log-sub">
+            <div class="log-date">{{ log.date | date:'dd MMM yyyy' }}</div>
+            <div class="log-actions">
+              <ion-icon name="trash-outline" (click)="deleteLog(log.id)"></ion-icon>
+            </div>
+          </div>
+          <p class="log-note" *ngIf="log.note">{{ log.note }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === NOTIF TAB === -->
+  <div *ngIf="currentTab === 'notif'" class="tab-content ion-padding">
+    <div class="page-header">
+      <h1 class="bold-title">Notifikasi</h1>
+      <p class="subtitle">Info terbaru untuk kendaraan Anda</p>
+    </div>
+
+    <div class="notif-list">
+      <div *ngIf="notifications.length === 0" class="empty-state-notif animate-fade-in">
+        <div class="empty-icon-box">
+          <ion-icon name="notifications-off-outline"></ion-icon>
+        </div>
+        <h3>Belum Ada Notifikasi</h3>
+        <p>Motor Anda dalam kondisi prima. Kami akan memberitahu jika ada jadwal perawatan.</p>
+      </div>
+
+      <div *ngFor="let n of notifications" class="notif-card glass-card" [class.unread]="n.unread" [class.promo]="n.title.toLowerCase().includes('promo')">
+        <div class="notif-status-bar" [ngClass]="{'urgent': n.title.toLowerCase().includes('rendah'), 'info': !n.title.toLowerCase().includes('rendah')}"></div>
+        <div class="notif-icon">
+          <ion-icon [name]="n.title.toLowerCase().includes('promo') ? 'pricetag-outline' : 'notifications-outline'"></ion-icon>
+        </div>
+        <div class="notif-content">
+          <div class="notif-header">
+            <h3>{{ n.title }}</h3>
+            <span class="notif-time">{{ n.time }}</span>
+          </div>
+          <p>{{ n.body }}</p>
+          <div class="notif-actions" *ngIf="n.unread">
+            <span (click)="n.unread = false" class="mark-read">Tandai sudah dibaca</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- === PROFIL TAB === -->
+  <div *ngIf="currentTab === 'profil'" class="tab-content ion-padding">
+    <h1 class="bold-title">Profil Pengguna</h1>
+    <div class="profile-header">
+      <div class="profile-pic-large" (click)="fileInput.click()">
+        <img [src]="userSession?.profilePic || 'assets/profile_avatar.png'" alt="Profile">
+        <div class="edit-badge"><ion-icon name="camera"></ion-icon></div>
+      </div>
+      <h2>{{ userSession?.fullname }}</h2>
+      <p>{{ userSession?.username }}</p>
+    </div>
+
+    <ion-list lines="none" class="transparent-list">
+      <ion-item class="custom-item clickable" (click)="openMotorSelect()">
+        <ion-label>Motor</ion-label>
+        <div slot="end" class="select-trigger">
+          <span>{{ userSession?.motorType || 'Pilih Motor' }}</span>
+          <ion-icon name="chevron-down-outline"></ion-icon>
+        </div>
+      </ion-item>
+      <ion-item class="custom-item">
+        <ion-label>Kapasitas Mesin</ion-label>
+        <ion-note slot="end">{{ userSession?.motorCC }} CC</ion-note>
+      </ion-item>
+      <ion-item class="custom-item">
+        <ion-label>Ban Terpasang</ion-label>
+        <ion-note slot="end" color="primary">{{ userSession?.currentTire || 'Belum dipilih' }}</ion-note>
+      </ion-item>
+    </ion-list>
+
+    <div class="logout-section ion-padding">
+      <ion-button expand="block" color="danger" class="logout-btn" (click)="logout()">
+        <ion-icon name="log-out-outline" slot="start"></ion-icon>
+        KELUAR AKUN
+      </ion-button>
+      
+      <p class="delete-account-text" (click)="deleteAccount()">Hapus Akun & Reset Semua Data</p>
+    </div>
+  </div>
+
 </ion-content>
+
+<!-- Custom Floating Bottom Navigation -->
+<ion-footer class="ion-no-border dashboard-footer">
+  <div class="pill-nav">
+    <div class="nav-item" [class.active]="currentTab === 'home'" (click)="setTab('home')">
+      <ion-icon name="home-outline" *ngIf="currentTab !== 'home'"></ion-icon>
+      <ion-icon name="home" *ngIf="currentTab === 'home'"></ion-icon>
+      <span *ngIf="currentTab === 'home'">UTAMA</span>
+    </div>
+    <div class="nav-item" [class.active]="currentTab === 'rawat'" (click)="setTab('rawat')">
+      <ion-icon name="build-outline" *ngIf="currentTab !== 'rawat'"></ion-icon>
+      <ion-icon name="build" *ngIf="currentTab === 'rawat'"></ion-icon>
+      <span *ngIf="currentTab === 'rawat'">RAWAT</span>
+    </div>
+    <div class="nav-item" [class.active]="currentTab === 'notif'" (click)="setTab('notif')">
+      <ion-icon name="notifications-outline" *ngIf="currentTab !== 'notif'"></ion-icon>
+      <ion-icon name="notifications" *ngIf="currentTab === 'notif'"></ion-icon>
+      <span *ngIf="currentTab === 'notif'">NOTIF</span>
+    </div>
+    <div class="nav-item" [class.active]="currentTab === 'profil'" (click)="setTab('profil')">
+      <ion-icon name="person-outline" *ngIf="currentTab !== 'profil'"></ion-icon>
+      <ion-icon name="person" *ngIf="currentTab === 'profil'"></ion-icon>
+      <span *ngIf="currentTab === 'profil'">PROFIL</span>
+    </div>
+  </div>
+</ion-footer>

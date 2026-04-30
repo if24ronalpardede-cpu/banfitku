@@ -1,0 +1,49 @@
+<ion-content [fullscreen]="true" class="auth-content">
+  <div class="auth-container">
+    <div class="header-section">
+      <div class="logo-wrapper">
+        <ion-icon name="disc-outline"></ion-icon>
+      </div>
+      <h1>BanFitKu</h1>
+      <p>Masuk ke akun Anda</p>
+    </div>
+
+    <div class="form-section">
+      <div class="input-group">
+        <ion-label>Username</ion-label>
+        <ion-item lines="none" class="custom-input">
+          <ion-icon name="person-outline" slot="start"></ion-icon>
+          <ion-input type="text" [(ngModel)]="username" placeholder="Masukkan username"></ion-input>
+        </ion-item>
+      </div>
+
+      <div class="input-group">
+        <ion-label>Password</ion-label>
+        <ion-item lines="none" class="custom-input">
+          <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+          <ion-input type="password" [(ngModel)]="password" placeholder="Masukkan password"></ion-input>
+        </ion-item>
+        <p class="error-text" *ngIf="password && password.length < 6">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          Password minimal 6 angka/karakter
+        </p>
+      </div>
+
+      <div class="forgot-link">
+        <span (click)="goToForgot()">Lupa Password?</span>
+      </div>
+
+      <ion-button expand="block" class="auth-btn" (click)="onLogin()">
+        MASUK
+      </ion-button>
+
+      <div class="divider">
+        <span>ATAU</span>
+      </div>
+
+      <p class="footer-text">
+        Belum punya akun? <span class="link" (click)="goToRegister()">Daftar Sekarang</span>
+      </p>
+    </div>
+  </div>
+</ion-content>

@@ -1,0 +1,65 @@
+<ion-content [fullscreen]="true" class="auth-content">
+  <div class="auth-container">
+    <div class="header-section">
+      <h1>Daftar Akun</h1>
+      <p>Lengkapi data untuk bergabung</p>
+    </div>
+
+    <div class="form-section">
+      <div class="input-group">
+        <ion-label>Nama Lengkap</ion-label>
+        <ion-item lines="none" class="custom-input">
+          <ion-icon name="person-outline" slot="start"></ion-icon>
+          <ion-input type="text" [(ngModel)]="fullname" placeholder="Masukkan nama lengkap"></ion-input>
+        </ion-item>
+      </div>
+
+      <div class="input-group">
+        <ion-label>Username</ion-label>
+        <ion-item lines="none" class="custom-input">
+          <ion-icon name="at-outline" slot="start"></ion-icon>
+          <ion-input type="text" [(ngModel)]="username" placeholder="Masukkan username"></ion-input>
+        </ion-item>
+      </div>
+
+      <div class="input-group">
+        <ion-label>Pilih Motor</ion-label>
+        <div class="custom-input clickable-select" (click)="openMotorSelect()">
+          <ion-icon name="motorcycle-outline" slot="start"></ion-icon>
+          <div class="select-text">
+            {{ selectedMotor?.name || 'Pilih motor Anda' }}
+          </div>
+          <ion-icon name="chevron-down-outline" slot="end" class="arrow-icon"></ion-icon>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <ion-label>Password</ion-label>
+        <ion-item lines="none" class="custom-input">
+          <ion-icon name="lock-closed-outline" slot="start"></ion-icon>
+          <ion-input type="password" [(ngModel)]="password" placeholder="Masukkan password"></ion-input>
+        </ion-item>
+        <p class="error-text" *ngIf="password && password.length < 6">
+          <ion-icon name="alert-circle-outline"></ion-icon>
+          Password minimal 6 angka/karakter
+        </p>
+      </div>
+
+      <div class="input-group">
+        <ion-label>Konfirmasi Password</ion-label>
+        <ion-item lines="none" class="custom-input">
+          <ion-icon name="shield-checkmark-outline" slot="start"></ion-icon>
+          <ion-input type="password" [(ngModel)]="confirmPassword" placeholder="Ulangi password"></ion-input>
+        </ion-item>
+      </div>
+
+      <ion-button expand="block" class="auth-btn" (click)="onRegister()">
+        DAFTAR SEKARANG
+      </ion-button>
+
+      <p class="footer-text">
+        Sudah punya akun? <span class="link" (click)="goToLogin()">Masuk di sini</span>
+      </p>
+    </div>
+  </div>
+</ion-content>

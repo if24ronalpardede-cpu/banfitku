@@ -1,0 +1,33 @@
+.custom-input.clickable-select {
+  display: flex;
+  align-items: center;
+  background: #10141e;
+  border-radius: 15px;
+  padding: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+
+  ion-icon {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 20px;
+  }
+
+  .select-text {
+    flex: 1;
+    color: white;
+    font-size: 15px;
+    margin-left: 10px;
+  }
+
+  .arrow-icon {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 16px;
+    margin-left: 10px;
+  }
+}
